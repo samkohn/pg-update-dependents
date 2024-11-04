@@ -6,7 +6,7 @@ from typing import Literal
 
 import networkx as nx
 
-import sql
+from . import sql
 
 
 @dataclasses.dataclass(frozen=True)

@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "postgresql-dependent-objects"
+dynamic = ["version"]
+description = 'Generate a script with all dependent views so you can modify your nested view'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "GPL-3.0-or-later"
+keywords = ["postgresql"]
+authors = [
+  { name = "Sam Kohn", email = "samjkohn@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "networkx~=3.4.1",
+  "pg8000~=1.31.2"
+]
+
+[project.scripts]
+get-dependents = "postgresql_dependent_objects.object_graph:main"
+
+[project.urls]
+Documentation = "https://github.com/samkohn/postgresql-dependent-objects#readme"
+Issues = "https://github.com/samkohn/postgresql-dependent-objects/issues"
+Source = "https://github.com/samkohn/postgresql-dependent-objects"
+
+[tool.hatch.version]
+path = "src/postgresql_dependent_objects/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/postgresql_dependent_objects tests}"
+
+[tool.coverage.run]
+source_pkgs = ["postgresql_dependent_objects", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/postgresql_dependent_objects/__about__.py",
+]
+
+[tool.coverage.paths]
+postgresql_dependent_objects = ["src/postgresql_dependent_objects", "*/postgresql-dependent-objects/src/postgresql_dependent_objects"]
+tests = ["tests", "*/postgresql-dependent-objects/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
