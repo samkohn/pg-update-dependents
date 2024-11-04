@@ -108,18 +108,6 @@ def main(args):
         f.write("\n\n    -- CREATE DEPENDENT RELATIONS --\n\n")
         f.write("\n\n".join(step.to_sql() for step in steps["creates"]))
 
-    # pprint.pprint([action.to_string() for action in order(graph, test_val)])
-    # pprint.pprint(
-    # sql.retrieve_definitions(
-    # conn,
-    # [
-    # action.obj
-    # for action in order(graph, test_val)
-    # if "create" in action.action_type
-    # ][:5],
-    # )
-    # )
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
