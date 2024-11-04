@@ -73,9 +73,22 @@ def main(args):
     conn = sql.get_conn(args.user, args.host, args.db, args.port, args.password)
     raw = sql.get_sql_objects_raw(conn)
     edge_list = create_edge_list(raw)
+    all_objects = set(e[0] for e in edge_list) | set(e[1] for e in edge_list)
+    target_schema, target_name = args.target.split(".")
+    target_obj = [
+        obj
+        for obj in all_objects
+        if obj.schema == target_schema and obj.name == target_name
+    ]
+    if len(target_obj) == 1:
+        target_obj = target_obj[0]
+    else:
+        raise ValueError(
+            f"There must be exactly one db object matching the target {args.target}, "
+            f"but I found {len(target_obj)}: {target_obj}"
+        )
     graph = nx.DiGraph(edge_list)
-    test_val = SQLObject("public", "person_current_sr", "v", 667242)
-    steps = order(graph, test_val)
+    steps = order(graph, target_obj)
     all_steps = steps["drops"] + steps["target_actions"] + steps["creates"]
     reverse_steps = list(reversed(all_steps))
     definitions = sql.retrieve_definitions(
@@ -120,6 +133,7 @@ if __name__ == "__main__":
         "-w", "--password", help="Will prompt for password if not provided"
     )
     parser.add_argument("-o", "--outfile", required=True)
+    parser.add_argument("target")
     args = parser.parse_args()
     if not args.password:
         args.password = getpass.getpass()
