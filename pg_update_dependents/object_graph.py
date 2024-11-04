@@ -1,5 +1,6 @@
 import argparse
 import dataclasses
+import getpass
 import pprint
 from typing import Literal
 
@@ -115,7 +116,11 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--host", required=True)
     parser.add_argument("-d", "--db", required=True)
     parser.add_argument("-p", "--port", type=int, required=True)
-    parser.add_argument("-w", "--password", required=True)
+    parser.add_argument(
+        "-w", "--password", help="Will prompt for password if not provided"
+    )
     parser.add_argument("-o", "--outfile", required=True)
     args = parser.parse_args()
+    if not args.password:
+        args.password = getpass.getpass()
     main(args)
