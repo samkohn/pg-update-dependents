@@ -97,7 +97,20 @@ def drop_then_create(steps: dict[str, list[Action]]) -> str:
     return script
 
 
-def main(args):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", "--user", required=True)
+    parser.add_argument("-t", "--host", required=True)
+    parser.add_argument("-d", "--db", required=True)
+    parser.add_argument("-p", "--port", type=int, required=True)
+    parser.add_argument(
+        "-w", "--password", help="Will prompt for password if not provided"
+    )
+    parser.add_argument("-o", "--outfile", required=True)
+    parser.add_argument("target")
+    args = parser.parse_args()
+    if not args.password:
+        args.password = getpass.getpass()
     conn = sql.get_conn(args.user, args.host, args.db, args.port, args.password)
     raw = sql.get_sql_objects_raw(conn)
     edge_list = create_edge_list(raw)
@@ -130,17 +143,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--user", required=True)
-    parser.add_argument("-t", "--host", required=True)
-    parser.add_argument("-d", "--db", required=True)
-    parser.add_argument("-p", "--port", type=int, required=True)
-    parser.add_argument(
-        "-w", "--password", help="Will prompt for password if not provided"
-    )
-    parser.add_argument("-o", "--outfile", required=True)
-    parser.add_argument("target")
-    args = parser.parse_args()
-    if not args.password:
-        args.password = getpass.getpass()
-    main(args)
+    main()
