@@ -1,4 +1,9 @@
+from pprint import pprint
+
 import pg8000.native
+
+def safe_obj_name(schema, name):
+    return pg8000.native.identifier(schema) + '.' + pg8000.native.identifier(name)
 
 def get_conn(user, host, database, port, password) -> pg8000.native.Connection:
     return pg8000.native.Connection(user, host, database, port, password)
@@ -53,15 +58,37 @@ ORDER BY source_schema, source_table;
 def definition_query(obj) -> str:
     if obj.kind == "m":
         return f"""SELECT
-    definition
+    'CREATE MATERIALIZED VIEW {obj.str_safe()}'
+    || E'\\nAS' || definition
+    || CASE
+        WHEN indexes.indexdefs IS NULL THEN ''
+        ELSE E'\\n\\n' || indexes.indexdefs
+    END
 FROM
     pg_matviews
-WHERE
-    schemaname = {pg8000.native.literal(obj.schema)}
+LEFT JOIN (
+    SELECT
+        schemaname,
+        tablename,
+        string_agg(indexdef || ';', E'\\n') AS indexdefs
+    FROM
+        pg_indexes
+    GROUP BY
+        schemaname,
+        tablename
+    ) as indexes
+    ON
+    pg_matviews.schemaname = indexes.schemaname
     AND
-    matviewname = {pg8000.native.literal(obj.name)};"""
+    pg_matviews.matviewname = indexes.tablename
+WHERE
+    pg_matviews.schemaname = {pg8000.native.literal(obj.schema)}
+    AND
+    pg_matviews.matviewname = {pg8000.native.literal(obj.name)};"""
     elif obj.kind == "v":
-        return f"SELECT pg_get_viewdef({pg8000.native.literal(obj.oid)}, true);"
+        return f"""SELECT
+        'CREATE OR REPLACE VIEW {obj.str_safe()}'
+        || E'\\nAS' || pg_get_viewdef({pg8000.native.literal(obj.oid)}, true);"""
     else:
         raise ValueError(f"Invalid SQLObject kind: {obj!r}")
 
