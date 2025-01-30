@@ -64,8 +64,11 @@ def definition_query(obj) -> str:
         WHEN indexes.indexdefs IS NULL THEN ''
         ELSE E'\\n\\n' || indexes.indexdefs
     END
+    || E'\\n\\nALTER TABLE ' || mat.schemaname || '.' || mat.matviewname
+    || ' OWNER TO ' || mat.matviewowner || E';\\n'
+    || grants.grants
 FROM
-    pg_matviews
+    pg_matviews mat
 LEFT JOIN (
     SELECT
         schemaname,
@@ -78,17 +81,48 @@ LEFT JOIN (
         tablename
     ) as indexes
     ON
-    pg_matviews.schemaname = indexes.schemaname
+    mat.schemaname = indexes.schemaname
     AND
-    pg_matviews.matviewname = indexes.tablename
+    mat.matviewname = indexes.tablename
+CROSS JOIN (
+    SELECT
+        STRING_AGG('GRANT ' || privilege_type || ' ON TABLE ' || table_schema || '.' || table_name
+            || ' TO ' || grantee || ';', E'\\n') as grants
+    FROM
+        information_schema.table_privileges
+    WHERE
+        table_schema= {pg8000.native.literal(obj.schema)}
+        AND
+        table_name = {pg8000.native.literal(obj.name)}
+) as grants
 WHERE
-    pg_matviews.schemaname = {pg8000.native.literal(obj.schema)}
+    mat.schemaname = {pg8000.native.literal(obj.schema)}
     AND
-    pg_matviews.matviewname = {pg8000.native.literal(obj.name)};"""
+    mat.matviewname = {pg8000.native.literal(obj.name)};"""
     elif obj.kind == "v":
         return f"""SELECT
         'CREATE OR REPLACE VIEW {obj.str_safe()}'
-        || E'\\nAS' || pg_get_viewdef({pg8000.native.literal(obj.oid)}, true);"""
+        || E'\\nAS' || pg_get_viewdef({pg8000.native.literal(obj.oid)}, true)
+        || E'\\n\\nALTER TABLE ' || schemaname || '.' || viewname
+        || ' OWNER TO ' || viewowner || E';\\n'
+        || grants.grants
+FROM
+    pg_views
+CROSS JOIN (
+    SELECT
+        STRING_AGG('GRANT ' || privilege_type || ' ON TABLE ' || table_schema || '.' || table_name
+            || ' TO ' || grantee || ';', E'\\n') as grants
+    FROM
+        information_schema.table_privileges
+    WHERE
+        table_schema= {pg8000.native.literal(obj.schema)}
+        AND
+        table_name = {pg8000.native.literal(obj.name)}
+) as grants
+WHERE
+    schemaname = {pg8000.native.literal(obj.schema)}
+    AND
+    viewname = {pg8000.native.literal(obj.name)};"""
     else:
         raise ValueError(f"Invalid SQLObject kind: {obj!r}")
 
