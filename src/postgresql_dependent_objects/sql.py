@@ -86,15 +86,51 @@ LEFT JOIN (
     mat.matviewname = indexes.tablename
 CROSS JOIN (
     SELECT
-        STRING_AGG('GRANT ' || privilege_type || ' ON TABLE ' || table_schema || '.' || table_name
-            || ' TO ' || grantee || ';', E'\\n') as grants
+        STRING_AGG('GRANT ' || statements.privilege || ' ON TABLE '
+            || statements.relation_name || ' TO ' || statements.grantee || ';',
+            E'\n') AS grants
     FROM
-        information_schema.table_privileges
-    WHERE
-        table_schema= {pg8000.native.literal(obj.schema)}
-        AND
-        table_name = {pg8000.native.literal(obj.name)}
-) as grants
+        (
+            SELECT
+                coalesce(nullif(s[1],
+                ''),
+                'public') AS grantee,
+                privs.privilege,
+                nspname || '.' || relname AS relation_name
+            FROM
+                pg_class c
+            JOIN pg_namespace n ON
+                n.oid = relnamespace
+            JOIN pg_roles r ON
+                r.oid = relowner,
+                unnest(coalesce(relacl::text[],
+                format('{{%s=arwdDxt/%s}}',
+                rolname,
+                rolname)::text[])) acl,
+                regexp_split_to_array(acl,
+                '=|/') s
+            CROSS JOIN LATERAL (
+                SELECT
+                    STRING_AGG(CASE
+                        ch
+                            WHEN 'r' THEN 'SELECT'
+                        WHEN 'w' THEN 'UPDATE'
+                        WHEN 'a' THEN 'INSERT'
+                        WHEN 'd' THEN 'DELETE'
+                        WHEN 'D' THEN 'TRUNCATE'
+                        WHEN 'x' THEN 'REFERENCES'
+                        WHEN 't' THEN 'TRIGGER'
+                    END,
+                    ', ') privilege
+                FROM
+                    regexp_split_to_table(s[2],
+                    '') ch
+            ) privs
+            WHERE
+                nspname = 'public'
+                AND relname = 'cached_person_current_units_string'
+        ) statements
+    ) grants
 WHERE
     mat.schemaname = {pg8000.native.literal(obj.schema)}
     AND
