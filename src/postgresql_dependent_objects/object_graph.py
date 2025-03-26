@@ -38,7 +38,7 @@ class Action:
                 kind_str = "VIEW"
             elif self.obj.kind == "m":
                 kind_str = "MATERIALIZED VIEW"
-            return f"DROP {kind_str} {self.obj.str_safe()}"
+            return f"DROP {kind_str} {self.obj.str_safe()};"
         elif self.definition is None:
             raise ValueError(f"Unknown CREATE definition for {self}")
         elif self.action_type == "create":
