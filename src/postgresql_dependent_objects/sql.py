@@ -127,8 +127,8 @@ CROSS JOIN (
                     '') ch
             ) privs
             WHERE
-                nspname = 'public'
-                AND relname = 'cached_person_current_units_string'
+                nspname = {pg8000.native.literal(obj.schema)}
+                AND relname = {pg8000.native.literal(obj.name)}
         ) statements
     ) grants
 WHERE
