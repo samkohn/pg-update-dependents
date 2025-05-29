@@ -68,7 +68,8 @@ def order(graph, targets: list[SQLObject]) -> dict[str, list[Action]]:
     combined = subgraphs[0]
     for subgraph in subgraphs:
         combined = nx.compose(combined, subgraph)
-    topo_order = list(nx.topological_sort(combined))
+    nx.nx_agraph.write_dot(combined, 'out.dot')
+    topo_order = list(nx.lexicographical_topological_sort(combined, key=lambda o:str(o)))
     drops = [Action("drop", node) for node in reversed(topo_order)]
     creates = [Action("create", node) for node in topo_order]
     return {
