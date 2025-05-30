@@ -55,11 +55,12 @@ ORDER BY source_schema, source_table;
     return raw_sql_results
 
 
-def definition_query(obj) -> str:
+def definition_query(obj, with_no_data) -> str:
     if obj.kind == "m":
         return f"""SELECT
     'CREATE MATERIALIZED VIEW {obj.str_safe()}'
-    || E'\\nAS' || definition
+    || E'\\nAS' || {"definition" if not with_no_data
+    else "RTRIM(definition, ';') || ' WITH NO DATA;'"}
     || CASE
         WHEN indexes.indexdefs IS NULL THEN ''
         ELSE E'\\n\\n' || indexes.indexdefs
@@ -163,7 +164,7 @@ WHERE
         raise ValueError(f"Invalid SQLObject kind: {obj!r}")
 
 
-def retrieve_definitions(conn: pg8000.native.Connection, objs) -> list[str]:
-    query = [definition_query(obj) for obj in objs]
+def retrieve_definitions(conn: pg8000.native.Connection, objs, with_no_data) -> list[str]:
+    query = [definition_query(obj, with_no_data) for obj in objs]
     result = conn.run("\n".join(query))
     return result

@@ -120,6 +120,11 @@ def main():
     )
     parser.add_argument("-o", "--outfile", required=True)
     parser.add_argument("targets", nargs="+")
+    parser.add_argument(
+        "--with-no-data",
+        action="store_true",
+        help="Postpone populating materialized views until the end of the script",
+    )
     args = parser.parse_args()
     if not args.password:
         args.password = getpass.getpass()
@@ -146,11 +151,20 @@ def main():
     steps = steps_by_type["drops"] + steps_by_type["creates"]
     reverse_steps = list(reversed(steps))
     definitions = sql.retrieve_definitions(
-        conn, [action.obj for action in reverse_steps if action.action_type == "create"]
+        conn,
+        [action.obj for action in reverse_steps if action.action_type == "create"],
+        args.with_no_data,
     )
     for step, definition in zip(reverse_steps, definitions):
         step.definition = "\n".join(definition).strip()
+
     script = drop_then_create(steps_by_type, target_objs.values())
+    if args.with_no_data:
+        # Manually refresh materialized views, in the correct order
+        refreshes = [f"REFRESH MATERIALIZED VIEW {step.obj.str_safe()};" for step in
+                     steps_by_type["creates"] if step.obj.kind == "m"]
+        script += "\n\n-- Populate all materialized views\n\n" + "\n\n".join(refreshes)
+
     with open(args.outfile, "w") as f:
         f.write(script)
 
