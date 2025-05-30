@@ -3,3 +3,4 @@ __pycache__
 *mypy*
 dist
 *.sql
+*.dot
