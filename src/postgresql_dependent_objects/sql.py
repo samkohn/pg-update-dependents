@@ -60,7 +60,7 @@ def definition_query(obj, with_no_data) -> str:
         return f"""SELECT
     'CREATE MATERIALIZED VIEW {obj.str_safe()}'
     || E'\\nAS' || {"definition" if not with_no_data
-    else "RTRIM(definition, ';') || '\nWITH NO DATA;'"}
+    else "RTRIM(definition, ';') || E'\\nWITH NO DATA;'"}
     || CASE
         WHEN indexes.indexdefs IS NULL THEN ''
         ELSE E'\\n\\n' || indexes.indexdefs
