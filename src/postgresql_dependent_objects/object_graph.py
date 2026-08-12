@@ -158,7 +158,11 @@ def main():
         args.with_no_data,
     )
     for step, definition in zip(reverse_steps, definitions):
-        step.definition = "\n".join(definition).strip()
+        try:
+            step.definition = "\n".join(definition).strip()
+        except Exception:
+            print(step)
+            print(definition)
 
     script = script_intro(target_objs.values())
     script += drop_then_create(steps_by_type, target_objs.values())

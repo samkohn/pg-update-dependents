@@ -68,7 +68,7 @@ WITH NO DATA;' '''}
     END
     || E'\\n\\nALTER TABLE ' || mat.schemaname || '.' || mat.matviewname
     || ' OWNER TO ' || mat.matviewowner || E';\\n'
-    || grants.grants
+    || COALESCE(grants.grants, '')
 FROM
     pg_matviews mat
 LEFT JOIN (
@@ -143,7 +143,7 @@ WHERE
         || E'\\nAS' || pg_get_viewdef({pg8000.native.literal(obj.oid)}, true)
         || E'\\n\\nALTER TABLE ' || schemaname || '.' || viewname
         || ' OWNER TO ' || viewowner || E';\\n'
-        || grants.grants
+        || COALESCE(grants.grants, '')
 FROM
     pg_views
 CROSS JOIN (
